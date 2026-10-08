@@ -19,6 +19,7 @@ import {
 import { attr } from '@/lib/utils';
 import { isString, isNumber } from '@/lib/utils/js-is';
 import isRecord from '@/lib/utils/object-utils/is-record';
+import runIfFunction from '@/lib/utils/function-utils/run-if-function';
 
 type Node = {
   id: string;
@@ -36,6 +37,14 @@ type DroppableData = {
     treeId: string;
     index: number;
   };
+};
+
+type DraggableState = {
+  isDragging: boolean;
+};
+
+type DroppableState = {
+  isDropping: boolean;
 };
 
 export type MoveEvent<T extends Node> = DraggableData & DroppableData & { node: T };
@@ -59,11 +68,13 @@ export interface ProviderProps<T extends Node> {
 export interface ListProps extends React.ComponentProps<'ol'> {
   id: string;
 }
-export interface DraggableItemProps extends React.ComponentPropsWithoutRef<'li'> {
+export interface DraggableItemProps extends Omit<React.ComponentPropsWithoutRef<'li'>, 'children'> {
   id: string;
+  children?: React.ReactNode | ((state: DraggableState) => React.ReactElement);
 }
-export interface DroppableItemProps extends React.ComponentPropsWithoutRef<'li'> {
+export interface DroppableItemProps extends Omit<React.ComponentPropsWithoutRef<'li'>, 'children'> {
   index: number;
+  children?: React.ReactNode | ((state: DroppableState) => React.ReactElement);
 }
 
 export function Provider<T extends Node>({
@@ -146,7 +157,7 @@ export function DraggableItem({ children, id, ...props }: DraggableItemProps) {
 
   return (
     <li ref={ref} data-active={attr(isDragging, true)} {...listeners} {...props}>
-      {children}
+      {runIfFunction(children, { isDragging })}
     </li>
   );
 }
@@ -165,7 +176,7 @@ export function DroppableItem({ children, index, ...props }: DroppableItemProps)
 
   return (
     <li ref={ref} role="presentation" data-over={attr(isDropping, true)} {...props}>
-      {children}
+      {runIfFunction(children, { isDropping })}
     </li>
   );
 }
