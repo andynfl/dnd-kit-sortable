@@ -3,15 +3,28 @@ type Node = {
   children?: Node[];
 };
 
+type EventSource = {
+  treeId: string;
+  nodeId: string;
+};
+
+type EventTarget = {
+  treeId: string;
+  index: number;
+};
+
+type InsertEvent<T extends Node> = {
+  node: T;
+  target: EventTarget;
+};
+
 type MoveEvent = {
-  source: {
-    treeId: string;
-    nodeId: string;
-  };
-  target: {
-    treeId: string;
-    index: number;
-  };
+  source: EventSource;
+  target: EventTarget;
+};
+
+type RemoveEvent = {
+  source: EventSource;
 };
 
 // Constants //////////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +32,18 @@ type MoveEvent = {
 export const ROOT_TREE_ID = '__root__';
 
 // Public API /////////////////////////////////////////////////////////////////////////////////////
+
+export function insertNode<T extends Node>(event: InsertEvent<T>, nodes: T[]) {
+  const { node, target } = event;
+
+  const targetChildren = getNodeChildren(nodes, target.treeId);
+  if (!targetChildren) return nodes;
+
+  const nextChildren = [...targetChildren];
+  nextChildren.splice(target.index, 0, node);
+
+  return setNodeChildren(nodes, target.treeId, nextChildren);
+}
 
 export function moveNode<T extends Node>(event: MoveEvent, nodes: T[]) {
   const { source, target } = event;
@@ -63,6 +88,21 @@ export function moveNode<T extends Node>(event: MoveEvent, nodes: T[]) {
     movedNode,
     ...targetChildren.slice(insertIndex),
   ]);
+}
+
+export function removeNode<T extends Node>(event: RemoveEvent, nodes: T[]) {
+  const { source } = event;
+
+  const sourceChildren = getNodeChildren(nodes, source.treeId);
+  if (!sourceChildren) return nodes;
+
+  const sourceIndex = sourceChildren.findIndex((it) => it.id === source.nodeId);
+  if (sourceIndex === -1) return nodes;
+
+  const nextChildren = [...sourceChildren];
+  nextChildren.splice(sourceIndex, 1);
+
+  return setNodeChildren(nodes, source.treeId, nextChildren);
 }
 
 export function getNodeChildren<T extends Node>(nodes: T[], id: string): T[] | undefined {
