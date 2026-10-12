@@ -18,6 +18,11 @@ type InsertEvent<T extends Node> = {
   target: EventTarget;
 };
 
+type UpdateEvent<T extends Node> = {
+  node: Partial<T>;
+  source: EventSource;
+};
+
 type MoveEvent = {
   source: EventSource;
   target: EventTarget;
@@ -43,6 +48,23 @@ export function insertNode<T extends Node>(event: InsertEvent<T>, nodes: T[]) {
   nextChildren.splice(target.index, 0, node);
 
   return setNodeChildren(nodes, target.treeId, nextChildren);
+}
+
+export function updateNode<T extends Node>(event: UpdateEvent<T>, nodes: T[]) {
+  const { node, source } = event;
+
+  const sourceChildren = getNodeChildren(nodes, source.treeId);
+  if (!sourceChildren) return nodes;
+
+  const sourceIndex = sourceChildren.findIndex((it) => it.id === source.nodeId);
+  if (sourceIndex === -1) return nodes;
+
+  const sourceNode = sourceChildren[sourceIndex];
+
+  const nextChildren = [...sourceChildren];
+  nextChildren.splice(sourceIndex, 1, { ...sourceNode, ...node });
+
+  return setNodeChildren(nodes, source.treeId, nextChildren);
 }
 
 export function moveNode<T extends Node>(event: MoveEvent, nodes: T[]) {
