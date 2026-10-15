@@ -3,32 +3,32 @@ type Node = {
   children?: Node[];
 };
 
-type EventSource = {
+export type EventSource = {
   treeId: string;
   nodeId: string;
 };
 
-type EventTarget = {
+export type EventTarget = {
   treeId: string;
   index: number;
 };
 
-type InsertEvent<T extends Node> = {
+export type InsertEvent<T extends Node> = {
   node: T;
   target: EventTarget;
 };
 
-type UpdateEvent<T extends Node> = {
+export type UpdateEvent<T extends Node> = {
   node: Partial<T>;
   source: EventSource;
 };
 
-type MoveEvent = {
+export type MoveEvent = {
   source: EventSource;
   target: EventTarget;
 };
 
-type RemoveEvent = {
+export type RemoveEvent = {
   source: EventSource;
 };
 
