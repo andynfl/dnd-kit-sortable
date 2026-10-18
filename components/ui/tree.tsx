@@ -49,7 +49,7 @@ export function Button<T extends React.ElementType = 'button'>({
           }}
         />
         <Icon as={icon} className="opacity-40 . group-aria-[current]:opacity-100" />
-        <span className="px-2 . line-clamp-1">{children}</span>
+        <span className="px-2 . line-clamp-1 text-left">{children}</span>
       </Text>
     </Comp>
   );

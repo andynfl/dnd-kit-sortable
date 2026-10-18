@@ -33,10 +33,10 @@ export default function TreeEditor<T extends Node>({
   value = { id: ROOT_TREE_ID, title: 'Tree', children: [] } as unknown as T,
   onChange,
 }: TreeEditorProps<T>) {
-  const [state, dispatch] = useState(value);
+  const [state, dispatch] = useState(() => toState(value));
 
   useEffect(() => {
-    onChange?.(state);
+    onChange?.(fromState(state, value));
   }, [state]);
 
   const adapter: Sortable.Adapter<Node> = {
@@ -90,29 +90,12 @@ interface TreeProps<T extends Node> {
   node: T;
   input: ReturnType<typeof useNodeInput>;
   onRemove?(event: RemoveEvent): void;
-  _id?: string;
   _depth?: number;
 }
 
-function Tree<T extends Node>({ node, input, onRemove, _id, _depth = 0 }: TreeProps<T>) {
-  return !node.children?.length ? (
-    <ul>
-      {input.isTargetNode(node) && (
-        <li role="presentation">
-          <div>
-            <input
-              type="text"
-              required
-              autoComplete="off"
-              {...{ ref: input.ref }}
-              {...input.listeners}
-            />
-          </div>
-        </li>
-      )}
-    </ul>
-  ) : (
-    <Sortable.List id={_id ?? ROOT_TREE_ID}>
+function Tree<T extends Node>({ node, input, onRemove, _depth = 0 }: TreeProps<T>) {
+  return (
+    <Sortable.List id={node.id}>
       {input.isTargetNode(node) && (
         <li role="presentation">
           <div>
@@ -134,7 +117,7 @@ function Tree<T extends Node>({ node, input, onRemove, _id, _depth = 0 }: TreePr
           <Sortable.DraggableItem id={child.id}>
             <div
               onDoubleClick={() => {
-                input.actions.update({ treeId: _id ?? ROOT_TREE_ID, nodeId: child.id });
+                input.actions.update({ treeId: node.id, nodeId: child.id });
               }}
             >
               {input.isSourceNode(child) ? (
@@ -153,13 +136,7 @@ function Tree<T extends Node>({ node, input, onRemove, _id, _depth = 0 }: TreePr
           </Sortable.DraggableItem>
 
           {child.children && (
-            <Tree
-              node={child}
-              input={input}
-              onRemove={onRemove}
-              _id={child.id}
-              _depth={_depth + 1}
-            />
+            <Tree node={child} input={input} onRemove={onRemove} _depth={_depth + 1} />
           )}
 
           <Sortable.DroppableItem index={i + 1} />
@@ -286,4 +263,14 @@ function useNodeInput<T extends Node>({ onInsert, onUpdate }: UseNodeInputOption
     isTargetNode,
     isSourceNode,
   } as const;
+}
+
+// Helpers ////////////////////////////////////////////////////////////////////////////////////////
+
+function toState<T extends Node>(defaultValue: T): T {
+  return { ...defaultValue, id: ROOT_TREE_ID };
+}
+
+function fromState<T extends Node>(state: T, defaultValue: T): T {
+  return { ...state, id: defaultValue.id };
 }
