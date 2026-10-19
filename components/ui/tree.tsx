@@ -49,9 +49,25 @@ export function Button<T extends React.ElementType = 'button'>({
           }}
         />
         <Icon as={icon} className="opacity-40 . group-aria-[current]:opacity-100" />
-        <span className="px-2 . line-clamp-1 text-left">{children}</span>
+        <span className="grow . inline-flex items-center . px-2 . line-clamp-1 text-left">
+          {children}
+        </span>
       </Text>
     </Comp>
+  );
+}
+
+export function Input({ ref, className, ...props }: React.ComponentProps<'input'>) {
+  return (
+    <input
+      ref={ref}
+      className={cn(
+        'grow . -mx-2 px-2 w-full h-7 . rounded-md outline-none . focus:ring-1 focus:ring-inset focus:ring-accent-700',
+        'dark:focus:ring-accent-600',
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
