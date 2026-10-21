@@ -24,16 +24,21 @@ type Node = {
   children?: Node[];
 };
 
-interface TreeEditorProps<T extends Node> {
+interface TreeEditorOptions {
+  maxDepth?: number;
+}
+
+interface TreeEditorProps<T extends Node> extends TreeEditorOptions {
   value?: T;
   onChange?(value: T): void;
 }
 
 export default function TreeEditor<T extends Node>({
   value = { id: ROOT_TREE_ID, title: 'Tree', children: [] } as unknown as T,
+  maxDepth = Infinity,
   onChange,
 }: TreeEditorProps<T>) {
-  const [state, dispatch] = useState(() => toState(value));
+  const [state, dispatch] = useState(() => toState(value, maxDepth));
 
   useEffect(() => {
     onChange?.(fromState(state, value));
@@ -79,21 +84,31 @@ export default function TreeEditor<T extends Node>({
 
   return (
     <Sortable.Provider adapter={adapter}>
-      <Tree node={state} input={input} onRemove={onRemove} />
+      <Tree node={state} input={input} maxDepth={maxDepth} onRemove={onRemove} />
     </Sortable.Provider>
   );
 }
 
 // Tree ///////////////////////////////////////////////////////////////////////////////////////////
 
-interface TreeProps<T extends Node> {
+interface TreeOptions {
+  maxDepth?: number;
+}
+
+interface TreeProps<T extends Node> extends TreeOptions {
   node: T;
   input: ReturnType<typeof useNodeInput>;
   onRemove?(event: RemoveEvent): void;
   _depth?: number;
 }
 
-function Tree<T extends Node>({ node, input, onRemove, _depth = 0 }: TreeProps<T>) {
+function Tree<T extends Node>({
+  node,
+  input,
+  maxDepth = Infinity,
+  onRemove,
+  _depth = 0,
+}: TreeProps<T>) {
   return (
     <Sortable.List id={node.id}>
       {input.isTargetNode(node) && (
@@ -135,8 +150,14 @@ function Tree<T extends Node>({ node, input, onRemove, _depth = 0 }: TreeProps<T
             </div>
           </Sortable.DraggableItem>
 
-          {child.children && (
-            <Tree node={child} input={input} onRemove={onRemove} _depth={_depth + 1} />
+          {child.children && _depth < maxDepth && (
+            <Tree
+              node={child}
+              input={input}
+              maxDepth={maxDepth}
+              onRemove={onRemove}
+              _depth={_depth + 1}
+            />
           )}
 
           <Sortable.DroppableItem index={i + 1} />
@@ -267,8 +288,22 @@ function useNodeInput<T extends Node>({ onInsert, onUpdate }: UseNodeInputOption
 
 // Helpers ////////////////////////////////////////////////////////////////////////////////////////
 
-function toState<T extends Node>(defaultValue: T): T {
-  return { ...defaultValue, id: ROOT_TREE_ID };
+function toState<T extends Node>(defaultValue: T, maxDepth = Infinity, _depth = -1): T {
+  const next = { ...defaultValue };
+
+  if (_depth === -1) {
+    next.id = ROOT_TREE_ID;
+  }
+
+  if (_depth < maxDepth && Array.isArray(next.children)) {
+    next.children = next.children.map((child) => toState(child, maxDepth, _depth + 1));
+  }
+
+  if (_depth === maxDepth && Object.prototype.hasOwnProperty.call(next, 'children')) {
+    delete next.children;
+  }
+
+  return next;
 }
 
 function fromState<T extends Node>(state: T, defaultValue: T): T {
