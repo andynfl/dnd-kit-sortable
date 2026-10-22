@@ -60,24 +60,30 @@ export default function TreeEditor<T extends Node>({
   };
 
   function onInsert(event: InsertEvent<T>) {
-    dispatch((s) => ({
-      ...s,
-      children: insertNode(event, s.children ?? []),
-    }));
+    dispatch((s) => {
+      const nextChildren = insertNode(event, s.children ?? []);
+
+      if (nextChildren === s.children) return s;
+      return { ...s, children: nextChildren };
+    });
   }
 
   function onUpdate(event: UpdateEvent<T>) {
-    dispatch((s) => ({
-      ...s,
-      children: updateNode(event, s.children ?? []),
-    }));
+    dispatch((s) => {
+      const nextChildren = updateNode(event, s.children ?? []);
+
+      if (nextChildren === s.children) return s;
+      return { ...s, children: nextChildren };
+    });
   }
 
   function onRemove(event: RemoveEvent) {
-    dispatch((s) => ({
-      ...s,
-      children: removeNode(event, s.children ?? []),
-    }));
+    dispatch((s) => {
+      const nextChildren = removeNode(event, s.children ?? []);
+
+      if (nextChildren === s.children) return s;
+      return { ...s, children: nextChildren };
+    });
   }
 
   const input = useNodeInput({ onInsert, onUpdate });
