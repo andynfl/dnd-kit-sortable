@@ -1,6 +1,7 @@
 'use client';
 import { Fragment, useRef, useState, useEffect } from 'react';
 
+import useControllableState from '@/lib/hooks/use-controllable-state';
 import {
   ROOT_TREE_ID,
   insertNode,
@@ -34,15 +35,18 @@ interface TreeEditorProps<T extends Node> extends TreeEditorOptions {
 }
 
 export default function TreeEditor<T extends Node>({
-  value = { id: ROOT_TREE_ID, title: 'Tree', children: [] } as unknown as T,
+  value,
   maxDepth = Infinity,
   onChange,
 }: TreeEditorProps<T>) {
-  const [state, dispatch] = useState(() => toState(value, maxDepth));
-
-  useEffect(() => {
-    onChange?.(fromState(state, value));
-  }, [state]);
+  const [state, dispatch] = useControllableState({
+    value: value ? toState(value, maxDepth) : value,
+    defaultValue: toState(
+      { id: ROOT_TREE_ID, title: 'Tree', children: [] },
+      maxDepth,
+    ) as unknown as T,
+    onChange,
+  });
 
   const adapter: Sortable.Adapter<Node> = {
     getNode(treeId, nodeId) {
@@ -54,7 +58,7 @@ export default function TreeEditor<T extends Node>({
         const nextChildren = moveNode(event, s.children ?? []);
 
         if (nextChildren === s.children) return s;
-        return { ...s, children: nextChildren };
+        return fromState({ ...s, children: nextChildren }, value ?? s);
       });
     },
   };
@@ -64,7 +68,7 @@ export default function TreeEditor<T extends Node>({
       const nextChildren = insertNode(event, s.children ?? []);
 
       if (nextChildren === s.children) return s;
-      return { ...s, children: nextChildren };
+      return fromState({ ...s, children: nextChildren }, value ?? s);
     });
   }
 
@@ -73,7 +77,7 @@ export default function TreeEditor<T extends Node>({
       const nextChildren = updateNode(event, s.children ?? []);
 
       if (nextChildren === s.children) return s;
-      return { ...s, children: nextChildren };
+      return fromState({ ...s, children: nextChildren }, value ?? s);
     });
   }
 
@@ -82,7 +86,7 @@ export default function TreeEditor<T extends Node>({
       const nextChildren = removeNode(event, s.children ?? []);
 
       if (nextChildren === s.children) return s;
-      return { ...s, children: nextChildren };
+      return fromState({ ...s, children: nextChildren }, value ?? s);
     });
   }
 
@@ -294,8 +298,8 @@ function useNodeInput<T extends Node>({ onInsert, onUpdate }: UseNodeInputOption
 
 // Helpers ////////////////////////////////////////////////////////////////////////////////////////
 
-function toState<T extends Node>(defaultValue: T, maxDepth = Infinity, _depth = -1): T {
-  const next = { ...defaultValue };
+function toState<T extends Node>(originalValue: T, maxDepth = Infinity, _depth = -1): T {
+  const next = { ...originalValue };
 
   if (_depth === -1) {
     next.id = ROOT_TREE_ID;
@@ -312,6 +316,6 @@ function toState<T extends Node>(defaultValue: T, maxDepth = Infinity, _depth = 
   return next;
 }
 
-function fromState<T extends Node>(state: T, defaultValue: T): T {
-  return { ...state, id: defaultValue.id };
+function fromState<T extends Node>(state: T, originalValue: T): T {
+  return { ...state, id: originalValue.id };
 }
