@@ -25,6 +25,10 @@ type Node = {
   children?: Node[];
 };
 
+type SelectEvent = {
+  source: EventSource;
+};
+
 interface TreeEditorOptions {
   maxDepth?: number;
 }
@@ -32,12 +36,14 @@ interface TreeEditorOptions {
 interface TreeEditorProps<T extends Node> extends TreeEditorOptions {
   value?: T;
   onChange?(value: T): void;
+  onSelect?(event: SelectEvent): void;
 }
 
 export default function TreeEditor<T extends Node>({
   value,
   maxDepth = Infinity,
   onChange,
+  onSelect,
 }: TreeEditorProps<T>) {
   const [state, dispatch] = useControllableState({
     value: value ? toState(value, maxDepth) : value,
@@ -94,7 +100,13 @@ export default function TreeEditor<T extends Node>({
 
   return (
     <Sortable.Provider adapter={adapter}>
-      <Tree node={state} input={input} maxDepth={maxDepth} onRemove={onRemove} />
+      <Tree
+        node={state}
+        input={input}
+        maxDepth={maxDepth}
+        onSelect={onSelect}
+        onRemove={onRemove}
+      />
     </Sortable.Provider>
   );
 }
@@ -108,6 +120,7 @@ interface TreeOptions {
 interface TreeProps<T extends Node> extends TreeOptions {
   node: T;
   input: ReturnType<typeof useNodeInput>;
+  onSelect?(event: SelectEvent): void;
   onRemove?(event: RemoveEvent): void;
   _depth?: number;
 }
@@ -116,6 +129,7 @@ function Tree<T extends Node>({
   node,
   input,
   maxDepth = Infinity,
+  onSelect,
   onRemove,
   _depth = 0,
 }: TreeProps<T>) {
@@ -141,6 +155,9 @@ function Tree<T extends Node>({
         <Fragment key={child.id}>
           <Sortable.DraggableItem id={child.id}>
             <div
+              onClick={() => {
+                onSelect?.({ source: { treeId: node.id, nodeId: child.id } });
+              }}
               onDoubleClick={() => {
                 input.actions.update({ treeId: node.id, nodeId: child.id });
               }}
@@ -165,6 +182,7 @@ function Tree<T extends Node>({
               node={child}
               input={input}
               maxDepth={maxDepth}
+              onSelect={onSelect}
               onRemove={onRemove}
               _depth={_depth + 1}
             />
